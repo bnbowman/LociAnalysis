@@ -17,6 +17,8 @@ from LociAnalysis.refdb import RefDb
 from LociAnalysis.whitelistdb import WhitelistDb
 from LociAnalysis.phaser import LaaPhaser
 from LociAnalysis.results import ResultWriter
+from LociAnalysis.version import (LONG_AMPLICON_VERSION,
+                                  SMRT_ANALYSIS_VERSION)
 
 import LociAnalysis.logger  # Enable TRACE-level logging
 
@@ -60,13 +62,15 @@ class LociAnalysis(object):
                                          combined=options.combineLoci,
                                          nproc=options.nproc)
 
+        logging.info("Found LAA v{0} from SMRT Analysis v{1}".format(LONG_AMPLICON_VERSION, SMRT_ANALYSIS_VERSION))
+
         if self._barcodes:
             for barcode in self._barcodes:
                 self._phaseSample( barcode )
+                self._resultWriter.finalizeSubreadCsv()
         else:
             self._phaseSample( None )
-
-        self._resultWriter.finalizeSubreadCsv()
+            self._resultWriter.finalizeSubreadCsv()
 
     def _phaseSample(self, barcode):
         if barcode is not None:

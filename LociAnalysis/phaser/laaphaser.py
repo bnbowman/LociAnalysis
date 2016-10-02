@@ -14,19 +14,10 @@ from tempfile import mkdtemp
 from pbcore.io import FastqReader
 
 from LociAnalysis.results import PhasingResult
+from LociAnalysis.which import which
+from LociAnalysis.version import SMRT_ANALYSIS_VERSION
 
 ILLEGAL_OPTS = set(["--doBc", "--resultFile", "--reportsFile", "--subreadsReportPrefix", "--noChimeraFilter"])
-
-def which(exe, env=os.environ):
-    def isExe(p):
-        return os.path.isfile(p) and os.access(p, os.X_OK)
-    if os.path.split(exe)[0] and isExe(exe):
-        return exe
-    for d in env.get("PATH", "").split(os.pathsep):
-        exePath = os.path.join(d.strip("\""), exe)
-        if isExe(exePath):
-            return exePath
-    return None
 
 class LaaPhaser(object):
 
@@ -43,6 +34,9 @@ class LaaPhaser(object):
         invalidOpts = set(kwargs.keys()) & ILLEGAL_OPTS
         if invalidOpts:
             raise RuntimeError("invalid options for laa: '{0}'".format(" ".join(invalidOpts)))
+        # Filter out options not present in older version
+        if SMRT_ANALYSIS_VERSION in ["3.1.0", "3.1.1"]:
+            del kwargs["skipRate"]
         return kwargs
 
     def _parseSummaryCsv( self ):
@@ -56,8 +50,8 @@ class LaaPhaser(object):
             readQuality  = hdr.index("PredictedAccuracy")
             didConverge  = hdr.index("ConsensusConverged")
             isNoise      = hdr.index("NoiseSequence")
-            isDup        = hdr.index("IsDuplicate")
-            dupOf        = hdr.index("DuplicateOf")
+            isDup        = hdr.index("IsDuplicate") if "IsDuplicate" in hdr else -1
+            dupOf        = hdr.index("DuplicateOf") if "DuplicateOf" in hdr else -1
             isChimera    = hdr.index("IsChimera")
             chimeraScore = hdr.index("ChimeraScore")
             parentA      = hdr.index("ParentSequenceA")
@@ -71,8 +65,8 @@ class LaaPhaser(object):
                          "readQuality":  row[readQuality],
                          "didConverge":  row[didConverge],
                          "isNoise":      row[isNoise],
-                         "isDup":        row[isDup],
-                         "dupOf":        row[dupOf],
+                         "isDup":        row[isDup] if isDup >= 0 else "N/A",
+                         "dupOf":        row[dupOf] if dupOf >= 0 else "N/A",
                          "isChimera":    row[isChimera],
                          "chimeraScore": row[chimeraScore],
                          "parentA":      row[parentA],
