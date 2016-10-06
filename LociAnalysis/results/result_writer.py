@@ -108,16 +108,18 @@ class ResultWriter(object):
             self._subreadData[subread][result.id] = weight
 
     def finalizeSubreadCsv( self ):
-        csv = self._openCsvWriter( self._subreadRoot + self._currBarcode + ".csv" )
+        # If we have a barcode, we have subread data that needs to be written out
+        if self._currBarcode:
+            csv = self._openCsvWriter( self._subreadRoot + self._currBarcode + ".csv" )
 
-        # Header is "SubreadId" followed by result ids in descending order
-        cols = ["SubreadId"] + sorted(self._subreadCols, key=NumReadsLambda, reverse=True)
-        csv.writerow( cols )
+            # Header is "SubreadId" followed by result ids in descending order
+            cols = ["SubreadId"] + sorted(self._subreadCols, key=NumReadsLambda, reverse=True)
+            csv.writerow( cols )
 
-        # Each row is the data for one subread
-        for subread, colData in self._subreadData.iteritems():
-            row = [subread] + [colData[rid] for rid in cols[1:]]
-            csv.writerow( row )
+            # Each row is the data for one subread
+            for subread, colData in self._subreadData.iteritems():
+                row = [subread] + [colData[rid] for rid in cols[1:]]
+                csv.writerow( row )
 
         # Finally, reset subread-related class variables for the next sample
         self._currBarcode = None
